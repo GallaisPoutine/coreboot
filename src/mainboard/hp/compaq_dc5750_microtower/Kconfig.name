@@ -1,0 +1,2 @@
+config BOARD_HP_COMPAQ_DC5750_MICROTOWER_PC
+	bool "Compaq DC5750 MicroTower"
