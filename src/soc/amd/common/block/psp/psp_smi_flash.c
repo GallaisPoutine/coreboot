@@ -66,15 +66,23 @@ static int lookup_store(uint64_t target_nv_id, struct region_device *rstore)
 	return rdev_chain(rstore, rdev, 0, region_device_sz(rdev));
 }
 
-static enum mbox_p2c_status find_psp_spi_flash_device_region(uint64_t target_nv_id,
-							     struct region_device *store,
-							     const struct spi_flash **flash)
+static enum mbox_p2c_status get_flash_device(const struct spi_flash **flash)
 {
 	*flash = boot_device_spi_flash();
 	if (*flash == NULL) {
 		printk(BIOS_ERR, "PSP: Unable to find SPI device\n");
 		return MBOX_PSP_COMMAND_PROCESS_ERROR;
 	}
+
+	return MBOX_PSP_SUCCESS;
+}
+
+static enum mbox_p2c_status find_psp_spi_flash_device_region(uint64_t target_nv_id,
+							     struct region_device *store,
+							     const struct spi_flash **flash)
+{
+	if (get_flash_device(flash) != MBOX_PSP_SUCCESS)
+		return MBOX_PSP_COMMAND_PROCESS_ERROR;
 
 	if (lookup_store(target_nv_id, store) < 0) {
 		printk(BIOS_ERR, "PSP: Unable to find PSP SPI region\n");
@@ -84,9 +92,14 @@ static enum mbox_p2c_status find_psp_spi_flash_device_region(uint64_t target_nv_
 	return MBOX_PSP_SUCCESS;
 }
 
-static bool spi_controller_available(void)
+static bool spi_controller_busy(void)
 {
-	return !(spi_read8(SPI_MISC_CNTRL) & SPI_SEMAPHORE_DRIVER_LOCKED);
+	const bool busy = (spi_read8(SPI_MISC_CNTRL) & SPI_SEMAPHORE_DRIVER_LOCKED);
+
+	if (busy)
+		printk(BIOS_NOTICE, "PSP: SPI controller busy\n");
+
+	return busy;
 }
 
 enum mbox_p2c_status psp_smi_spi_get_info(struct mbox_default_buffer *buffer)
@@ -105,8 +118,7 @@ enum mbox_p2c_status psp_smi_spi_get_info(struct mbox_default_buffer *buffer)
 	if (!is_valid_psp_spi_info(cmd_buf))
 		return MBOX_PSP_COMMAND_PROCESS_ERROR;
 
-	if (!spi_controller_available()) {
-		printk(BIOS_NOTICE, "PSP: SPI controller busy\n");
+	if (spi_controller_busy()) {
 		return MBOX_PSP_SPI_BUSY;
 	}
 
@@ -148,8 +160,7 @@ enum mbox_p2c_status psp_smi_spi_read(struct mbox_default_buffer *buffer)
 	if (!is_valid_psp_spi_read_write(cmd_buf))
 		return MBOX_PSP_COMMAND_PROCESS_ERROR;
 
-	if (!spi_controller_available()) {
-		printk(BIOS_NOTICE, "PSP: SPI controller busy\n");
+	if (spi_controller_busy()) {
 		return MBOX_PSP_SPI_BUSY;
 	}
 
@@ -197,8 +208,7 @@ enum mbox_p2c_status psp_smi_spi_write(struct mbox_default_buffer *buffer)
 	if (!is_valid_psp_spi_read_write(cmd_buf))
 		return MBOX_PSP_COMMAND_PROCESS_ERROR;
 
-	if (!spi_controller_available()) {
-		printk(BIOS_NOTICE, "PSP: SPI controller busy\n");
+	if (spi_controller_busy()) {
 		return MBOX_PSP_SPI_BUSY;
 	}
 
@@ -245,8 +255,7 @@ enum mbox_p2c_status psp_smi_spi_erase(struct mbox_default_buffer *buffer)
 	if (!is_valid_psp_spi_erase(cmd_buf))
 		return MBOX_PSP_COMMAND_PROCESS_ERROR;
 
-	if (!spi_controller_available()) {
-		printk(BIOS_NOTICE, "PSP: SPI controller busy\n");
+	if (spi_controller_busy()) {
 		return MBOX_PSP_SPI_BUSY;
 	}
 
@@ -266,6 +275,58 @@ enum mbox_p2c_status psp_smi_spi_erase(struct mbox_default_buffer *buffer)
 		printk(BIOS_ERR, "PSP: Failed to erase SPI NVRAM data\n");
 		return MBOX_PSP_COMMAND_PROCESS_ERROR;
 	}
+
+	return MBOX_PSP_SUCCESS;
+}
+
+enum mbox_p2c_status psp_smi_spi_rpmc_inc_mc(struct mbox_default_buffer *buffer)
+{
+	struct mbox_psp_cmd_spi_rpmc_inc_mc *const cmd_buf =
+		(struct mbox_psp_cmd_spi_rpmc_inc_mc *)buffer;
+	const struct spi_flash *flash;
+
+	printk(BIOS_SPEW, "PSP: SPI RPMC increment monotonic counter request\n");
+
+	if (!CONFIG(SOC_AMD_COMMON_BLOCK_PSP_RPMC))
+		return MBOX_PSP_UNSUPPORTED;
+
+	if (spi_controller_busy()) {
+		return MBOX_PSP_SPI_BUSY;
+	}
+
+	if (get_flash_device(&flash) != MBOX_PSP_SUCCESS)
+		return MBOX_PSP_COMMAND_PROCESS_ERROR;
+
+	if (spi_flash_rpmc_increment(flash, cmd_buf->req.counter_address,
+				     cmd_buf->req.counter_data, cmd_buf->req.signature)
+			!= CB_SUCCESS)
+		return MBOX_PSP_COMMAND_PROCESS_ERROR;
+
+	return MBOX_PSP_SUCCESS;
+}
+
+enum mbox_p2c_status psp_smi_spi_rpmc_req_mc(struct mbox_default_buffer *buffer)
+{
+	struct mbox_psp_cmd_spi_rpmc_req_mc *const cmd_buf =
+		(struct mbox_psp_cmd_spi_rpmc_req_mc *)buffer;
+	const struct spi_flash *flash;
+
+	printk(BIOS_SPEW, "PSP: SPI RPMC request monotonic counter request\n");
+
+	if (!CONFIG(SOC_AMD_COMMON_BLOCK_PSP_RPMC))
+		return MBOX_PSP_UNSUPPORTED;
+
+	if (spi_controller_busy()) {
+		return MBOX_PSP_SPI_BUSY;
+	}
+
+	if (get_flash_device(&flash) != MBOX_PSP_SUCCESS)
+		return MBOX_PSP_COMMAND_PROCESS_ERROR;
+
+	if (spi_flash_rpmc_request(flash, cmd_buf->req.counter_address, cmd_buf->req.tag,
+				   cmd_buf->req.signature, cmd_buf->req.output_counter_data,
+				   cmd_buf->req.output_signature) != CB_SUCCESS)
+		return MBOX_PSP_COMMAND_PROCESS_ERROR;
 
 	return MBOX_PSP_SUCCESS;
 }

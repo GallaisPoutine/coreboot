@@ -32,7 +32,7 @@ chip soc/intel/alderlake
 	register "s0ix_enable" = "true"
 
 	# DPTF enable
-	register "dptf_enable" = "1"
+	register "dptf_enable" = "true"
 
 	register "tcc_offset" = "10"     # TCC of 90
 
@@ -93,6 +93,9 @@ chip soc/intel/alderlake
 	# FIXME: To be enabled in future based on PNP impact data.
 	# Disable Package C-state demotion for nissa baseboard.
 	register "disable_package_c_state_demotion" = "true"
+
+	# Vccin Aux Imon Iccmax, follow RDC#646929 Power Map requirement
+	register "vccin_aux_imon_iccmax" = "PD_TIER_VOLUME" # 27A
 
 	# Intel Common SoC Config
 	#+-------------------+---------------------------+

@@ -294,7 +294,7 @@ chip soc/intel/alderlake
 				register "link_freq[0]" = "450000000"
 				register "remote_name" = ""IPU0""
 
-				register "has_power_resource" = "1"
+				register "has_power_resource" = "true"
 				#Controls
 				register "clk_panel.clks[0].clknum" = "0" #IMGCLKOUT_0
 				register "clk_panel.clks[0].freq" = "1" #19.2 Mhz
@@ -345,7 +345,7 @@ chip soc/intel/alderlake
 				register "link_freq[0]" = "450000000"
 				register "remote_name" = ""IPU0""
 
-				register "has_power_resource" = "1"
+				register "has_power_resource" = "true"
 				#Controls
 				register "clk_panel.clks[0].clknum" = "1" #IMGCLKOUT_1
 				register "clk_panel.clks[0].freq" = "1" #19.2 Mhz
@@ -393,6 +393,9 @@ chip soc/intel/alderlake
 					chip drivers/soundwire/alc711
 						# SoundWire Link 0 ID 1
 						register "desc" = ""Headset Codec""
+						register "alc711_address.version" = "SOUNDWIRE_VERSION_1_1"
+						register "alc711_address.class" = "MIPI_CLASS_NONE"
+						register "alc711_address.part_id" = "MIPI_DEV_ID_REALTEK_ALC711"
 						device generic 0.1 on end
 					end
 				end

@@ -515,7 +515,6 @@ CFLAGS_common += -Wstrict-prototypes
 CFLAGS_common += -Wmissing-prototypes
 CFLAGS_common += -Wwrite-strings
 CFLAGS_common += -Wredundant-decls
-CFLAGS_common += -Wno-trigraphs
 CFLAGS_common += -Wimplicit-fallthrough
 CFLAGS_common += -Wshadow
 CFLAGS_common += -Wdate-time
@@ -776,6 +775,10 @@ SCONFIG_OPTIONS += --output_d=$(DEVICETREE_DEVICENAMES_H)
 DEVICETREE_FWCONFIG_H := $(obj)/static_fw_config.h
 SCONFIG_OPTIONS += --output_f=$(DEVICETREE_FWCONFIG_H)
 
+# Generated at the same time as static.c
+$(DEVICETREE_STATIC_H): $(DEVICETREE_STATIC_C)
+	true
+
 $(DEVICETREE_STATIC_C): $(DEVICETREE_FILE) $(OVERRIDE_DEVICETREE_FILE) $(CHIPSET_DEVICETREE_FILE) $(objutil)/sconfig/sconfig
 	@printf "    SCONFIG    $(subst $(src)/,,$(<))\n"
 	mkdir -p $(dir $(DEVICETREE_STATIC_C))
@@ -788,13 +791,13 @@ bootblock-y+=$(DEVICETREE_STATIC_C)
 postcar-y+=$(DEVICETREE_STATIC_C)
 smm-y+=$(DEVICETREE_STATIC_C)
 
-# Ensure static.c and static.h are created before any objects are compiled
-ramstage-c-deps+=$(DEVICETREE_STATIC_C)
-romstage-c-deps+=$(DEVICETREE_STATIC_C)
-verstage-c-deps+=$(DEVICETREE_STATIC_C)
-bootblock-c-deps+=$(DEVICETREE_STATIC_C)
-postcar-c-deps+=$(DEVICETREE_STATIC_C)
-smm-c-deps+=$(DEVICETREE_STATIC_C)
+# Ensure static.h is generated before any objects are compiled
+ramstage-c-gen-deps+=$(DEVICETREE_STATIC_H)
+romstage-c-gen-deps+=$(DEVICETREE_STATIC_H)
+verstage-c-gen-deps+=$(DEVICETREE_STATIC_H)
+bootblock-c-gen-deps+=$(DEVICETREE_STATIC_H)
+postcar-c-gen-deps+=$(DEVICETREE_STATIC_H)
+smm-c-gen-deps+=$(DEVICETREE_STATIC_H)
 
 # Ensure fmap_config.h are created before any objects are compiled
 ramstage-c-deps+=$(obj)/fmap_config.h
@@ -985,7 +988,6 @@ endif
 #
 # CBFSTOOL_ADD_CMD_OPTIONS can be used by arch/SoC/mainboard to supply
 # add commands with any additional arguments for cbfstool.
-# Example: --ext-win-base <base> --ext-win-size <size>
 define cbfs-add-cmd-for-region
 	$(CBFSTOOL) $@.tmp \
 	add$(if $(filter stage,$(call extract_nth,3,$(1))),-stage)$(if \
@@ -1336,12 +1338,14 @@ ifeq ($(CONFIG_CBFS_VERIFICATION),y)
 	fi
 endif # CONFIG_CBFS_VERIFICATION
 
+LTO_LINK_CFLAGS := -Wno-stack-usage
+
 define link_stage
 # $1 stage name
 ifeq ($(CONFIG_LTO),y)
 $$(objcbfs)/$(1).debug: $$$$($(1)-libs) $$$$($(1)-objs)
 	@printf "    LINK       $$(subst $$(obj)/,,$$(@))\n"
-	$$(CC_$(1)) $$(CPPFLAGS_$(1)) $$(CFLAGS_$(1)) $$(LDFLAGS_$(1):%=-Wl,%) -o $$@ -L$$(obj) $$(COMPILER_RT_FLAGS_$(1):%=-Wl,%) -Wl,--whole-archive -Wl,--start-group $$(filter-out %.ld,$$($(1)-objs)) $$($(1)-libs) -Wl,--no-whole-archive $$(COMPILER_RT_$(1)) -Wl,--end-group -T $(call src-to-obj,$(1),$(CONFIG_MEMLAYOUT_LD_FILE))
+	$$(CC_$(1)) $$(CPPFLAGS_$(1)) $$(CFLAGS_$(1)) $$(LDFLAGS_$(1):%=-Wl,%) $(LTO_LINK_CFLAGS) -o $$@ -L$$(obj) $$(COMPILER_RT_FLAGS_$(1):%=-Wl,%) -Wl,--whole-archive -Wl,--start-group $$(filter-out %.ld,$$($(1)-objs)) $$($(1)-libs) -Wl,--no-whole-archive $$(COMPILER_RT_$(1)) -Wl,--end-group -T $(call src-to-obj,$(1),$(CONFIG_MEMLAYOUT_LD_FILE))
 else
 $$(objcbfs)/$(1).debug: $$$$($(1)-libs) $$$$($(1)-objs)
 	@printf "    LINK       $$(subst $$(obj)/,,$$(@))\n"

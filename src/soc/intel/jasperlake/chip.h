@@ -152,6 +152,9 @@ struct soc_intel_jasperlake_config {
 	/* Probe CLKREQ# signal before enabling CLKREQ# based power management.*/
 	bool PcieRpClkReqDetect[CONFIG_MAX_ROOT_PORTS];
 
+	/* PCIe LTR */
+	bool PcieRpLtrEnable[CONFIG_MAX_ROOT_PORTS];
+
 	/* PCIe RP L1 substate */
 	enum L1_substates_control PcieRpL1Substates[CONFIG_MAX_ROOT_PORTS];
 
@@ -223,9 +226,6 @@ struct soc_intel_jasperlake_config {
 
 	/* Enable Pch iSCLK */
 	bool pch_isclk;
-
-	/* CNVi BT Audio Offload: Enable/Disable BT Audio Offload. */
-	bool CnviBtAudioOffload;
 
 	/* Tcss */
 	bool TcssXhciEn;

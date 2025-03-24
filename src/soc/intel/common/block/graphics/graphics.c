@@ -1,7 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0-or-later */
 
 #include <acpi/acpi.h>
-#include <assert.h>
 #include <bootmode.h>
 #include <console/console.h>
 #include <device/mmio.h>
@@ -346,6 +345,7 @@ static const unsigned short pci_device_ids[] = {
 	PCI_DID_INTEL_PTL_U_GT2_1,
 	PCI_DID_INTEL_PTL_H_GT2_1,
 	PCI_DID_INTEL_PTL_H_GT2_2,
+	PCI_DID_INTEL_PTL_H_GT2_3,
 	PCI_DID_INTEL_LNL_M_GT2,
 	PCI_DID_INTEL_RPL_U_GT1,
 	PCI_DID_INTEL_RPL_U_GT2,
@@ -459,6 +459,8 @@ static const unsigned short pci_device_ids[] = {
 	PCI_DID_INTEL_ADL_N_GT1,
 	PCI_DID_INTEL_ADL_N_GT2,
 	PCI_DID_INTEL_ADL_N_GT3,
+	PCI_DID_INTEL_ADL_N_GT4,
+	PCI_DID_INTEL_ADL_N_GT5,
 	PCI_DID_INTEL_RPL_S_GT0,
 	PCI_DID_INTEL_RPL_S_GT1_1,
 	PCI_DID_INTEL_RPL_S_GT1_2,

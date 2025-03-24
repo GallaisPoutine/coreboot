@@ -1,4 +1,7 @@
 chip soc/intel/jasperlake
+	# PCIe RP LTR configuration
+	register "PcieRpLtrEnable[7]" = "true"
+
 	# USB Port Configuration
 	register "usb2_ports[1]" = "USB2_PORT_EMPTY"
 	register "usb2_ports[3]" = "USB2_PORT_EMPTY"
@@ -30,6 +33,12 @@ chip soc/intel/jasperlake
 		},
 		.i2c[0] = {
 			.speed = I2C_SPEED_FAST,
+			.speed_config[0] = {
+				.speed = I2C_SPEED_FAST,
+				.scl_lcnt = 178,
+				.scl_hcnt = 92,
+				.sda_hold = 40,
+			}
 		},
 		.i2c[2] = {
 			.speed = I2C_SPEED_FAST,
@@ -146,7 +155,7 @@ chip soc/intel/jasperlake
 					chip drivers/usb/acpi
 						register "desc" = ""User Facing Camera""
 						register "type" = "UPC_TYPE_INTERNAL"
-						register "has_power_resource" = "1"
+						register "has_power_resource" = "true"
 						register "enable_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPP_D15)"
 						register "enable_delay_ms" = "20"
 						device usb 2.5 on end
@@ -200,7 +209,7 @@ chip soc/intel/jasperlake
 				register "enable_gpio" =
 							"ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPP_D6)"
 				register "enable_delay_ms" = "7"
-				register "has_power_resource" = "1"
+				register "has_power_resource" = "true"
 				device i2c 10 on end
 			end
 		end # I2C 2

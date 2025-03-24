@@ -17,12 +17,13 @@
 #include <soc/chip_common.h>
 #include <soc/romstage.h>
 #include <soc/pci_devs.h>
-#include <soc/soc_pch.h>
+#include <static.h>
 #include <string.h>
 #include <soc/config.h>
 #include <soc/soc_util.h>
 #include <soc/util.h>
 #include <soc/ddr.h>
+#include <IioPcieConfigUpd.h>
 
 #include "chip.h"
 
@@ -241,13 +242,9 @@ void platform_fsp_memory_init_params_cb(FSPM_UPD *mupd, uint32_t version)
 		mupd->FspmConfig.serialDebugMsgLvl = 0x3;
 		mupd->FspmConfig.AllowedSocketsInParallel = 0x1;
 		mupd->FspmConfig.EnforcePopulationPor = 0x1;
-		if (CONFIG(RMT_MEM_POR_FREQ))
-			mupd->FspmConfig.EnforceDdrMemoryFreqPor = 0x0;
 	}
-
-	/* SPR-FSP has no UPD to disable HDA, so do it manually here... */
-	if (!is_devfn_enabled(PCH_DEVFN_HDA))
-		pch_disable_hda();
+	if (CONFIG(MEM_POR_FREQ))
+		mupd->FspmConfig.EnforceDdrMemoryFreqPor = 0x0;
 }
 
 uint8_t get_error_correction_type(const uint8_t RasModesEnabled)

@@ -280,7 +280,7 @@ car_init_done:
 	andl	$0xfffffff0, %esp
 
 #if ENV_X86_64
-	setup_longmode $PM4LE
+	setup_longmode $PML4E
 
 	movd	%mm2, %rdi
 	shlq	$32, %rdi
@@ -495,6 +495,17 @@ find_llc_subleaf:
 	div	%ebx /* way size */
 	mov	%eax, %ecx
 
+#if CONFIG(INTEL_CAR_ENEM_USE_EFFECTIVE_WAY_SIZE)
+	/*
+	 * Limit the way size to the effective way size defined
+	 * as the biggest power of two of the way size.
+	 */
+	bsr	%ecx, %ecx /* Find the most significant bit */
+	mov	$1, %eax
+	shl	%cl, %eax  /* Shift 1 left to get the effective way size */
+	mov	%eax, %ecx
+#endif
+
 	/*
 	 * Check if way size if bigger than the cache ram size.
 	 * Then we need to allocate just one way for non-eviction
@@ -513,13 +524,13 @@ find_llc_subleaf:
 	xor	%edx, %edx /* Clear the upper 32-bit of dividend */
 	div	%ecx
 	/*
-	 * Increment data_ways by 1 if RW data size (CONFIG_DCACHE_RAM_SIZE) is
+	 * Effectively ceiling the result if RW data size (CONFIG_DCACHE_RAM_SIZE) is
 	 * not divisible by way_size (ECX)
 	 */
-	movl	$0x01, %ecx
-	cmp	$0x00, %edx
-	cmovne	%ecx, %edx
-	add	%edx, %eax
+	testl %edx, %edx
+	jz skip_increment
+	incl %eax
+skip_increment:
 	mov	%eax, %edx /* back up data_ways in edx */
 	mov	%eax, %ecx
 	movl	$0x01, %eax

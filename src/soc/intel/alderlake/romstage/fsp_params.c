@@ -8,6 +8,7 @@
 #include <device/device.h>
 #include <drivers/wifi/generic/wifi.h>
 #include <elog.h>
+#include <fsp/api.h>
 #include <fsp/fsp_debug_event.h>
 #include <fsp/util.h>
 #include <gpio.h>
@@ -16,12 +17,14 @@
 #include <intelblocks/cse.h>
 #include <intelblocks/pcie_rp.h>
 #include <option.h>
+#include <soc/intel/common/reset.h>
 #include <soc/iomap.h>
 #include <soc/msr.h>
 #include <soc/pci_devs.h>
 #include <soc/pcie.h>
 #include <soc/romstage.h>
 #include <soc/soc_chip.h>
+#include <static.h>
 #include <string.h>
 
 #include "ux.h"
@@ -412,6 +415,13 @@ static void debug_override_memory_init_params(FSP_M_CONFIG *mupd)
 	debug_get_pch_cpu_tracehub_modes(&mupd->CpuTraceHubMode, &mupd->PchTraceHubMode);
 }
 
+#if CONFIG(PLATFORM_HAS_EARLY_LOW_BATTERY_INDICATOR)
+void platform_display_early_shutdown_notification(void *arg)
+{
+	ux_inform_user_of_poweroff_operation("low-battery shutdown");
+}
+#endif
+
 static void fill_fspm_sign_of_life(FSP_M_CONFIG *m_cfg,
 				   FSPM_ARCH_UPD *arch_upd)
 {
@@ -438,14 +448,14 @@ static void fill_fspm_sign_of_life(FSP_M_CONFIG *m_cfg,
 	 * packed as part of the CBFS then CSE sync will be triggered. CSE sync can take
 	 * < 1-minute hence, let's inform the end user with an on-screen text message.
 	 */
-	if (CONFIG(SOC_INTEL_CSE_LITE_SKU) && is_cse_fw_update_required()) {
+	if (CONFIG(SOC_INTEL_CSE_LITE_SYNC_IN_RAMSTAGE) && is_cse_fw_update_required()
+		&& !is_cse_boot_to_rw()) {
 		if (esol_required) {
 			name = "memory training and CSE update";
 		} else {
 			name = "CSE update";
 			esol_required =  true;
 		}
-
 		elog_add_event_byte(ELOG_TYPE_FW_EARLY_SOL, ELOG_FW_EARLY_SOL_CSE_SYNC);
 	}
 

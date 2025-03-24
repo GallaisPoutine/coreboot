@@ -19,15 +19,11 @@ end
 chip soc/intel/alderlake
 	register "sagv" = "SaGv_Enabled"
 
-	# GPE configuration
-	register "pmc_gpe0_dw1" = "GPP_B"
-	register "pmc_gpe0_dw2" = "GPP_F"
-
 	# S0ix enable
 	register "s0ix_enable" = "true"
 
 	# DPTF enable
-	register "dptf_enable" = "1"
+	register "dptf_enable" = "true"
 
 	register "tcc_offset" = "10"     # TCC of 90
 
@@ -120,13 +116,16 @@ chip soc/intel/alderlake
 		.vnn_icc_max_ma = 500,
 	}"
 
+	# Enable CNVi BT Audio offload
+	register "cnvi_bt_audio_offload" = "1"
+
 	register "serial_io_i2c_mode" = "{
 		[PchSerialIoIndexI2C0] = PchSerialIoPci,
 		[PchSerialIoIndexI2C1] = PchSerialIoPci,
 		[PchSerialIoIndexI2C2] = PchSerialIoDisabled,
 		[PchSerialIoIndexI2C3] = PchSerialIoDisabled,
 		[PchSerialIoIndexI2C4] = PchSerialIoDisabled,
-		[PchSerialIoIndexI2C5] = PchSerialIoPci,
+		[PchSerialIoIndexI2C5] = PchSerialIoDisabled,
 	}"
 
 	register "serial_io_gspi_mode" = "{
@@ -152,7 +151,6 @@ chip soc/intel/alderlake
 	#|                   | required to set up a BAR  |
 	#|                   | for TPM communication     |
 	#| I2C1              | Trackpad                  |
-	#| I2C5              | Touchscreen               |
 	#+-------------------+---------------------------+
 	register "common_soc_config" = "{
 		.i2c[0] = {
@@ -174,33 +172,6 @@ chip soc/intel/alderlake
 				.sda_hold = 7,
 			}
 		},
-		.i2c[5] = {
-			.speed = I2C_SPEED_FAST,
-			.speed_config[0] = {
-				.speed = I2C_SPEED_FAST,
-				.scl_lcnt = 158,
-				.scl_hcnt = 79,
-				.sda_hold = 7,
-			}
-		},
-	}"
-
-	register "power_limits_config[ADL_N_041_6W_CORE]" = "{
-		.tdp_pl1_override = 20,
-		.tdp_pl2_override = 25,
-		.tdp_pl4 = 78,
-	}"
-
-	register "power_limits_config[ADL_N_081_7W_CORE]" = "{
-		.tdp_pl1_override = 20,
-		.tdp_pl2_override = 25,
-		.tdp_pl4 = 78,
-	}"
-
-	register "power_limits_config[ADL_N_081_15W_CORE]" = "{
-		.tdp_pl1_override = 20,
-		.tdp_pl2_override = 35,
-		.tdp_pl4 = 83,
 	}"
 
 	device domain 0 on
@@ -244,7 +215,7 @@ chip soc/intel/alderlake
 				register "policies.passive" = "{
 					[0] = DPTF_PASSIVE(CPU,         CPU,           95, 5000),
 					[1] = DPTF_PASSIVE(CPU,         TEMP_SENSOR_0, 70, 5000),
-					[2] = DPTF_PASSIVE(CPU,         TEMP_SENSOR_1, 70, 5000),
+					[2] = DPTF_PASSIVE(CHARGER,     TEMP_SENSOR_1, 70, 5000),
 					[3] = DPTF_PASSIVE(CPU,         TEMP_SENSOR_2, 70, 5000),
 				}"
 
@@ -258,8 +229,8 @@ chip soc/intel/alderlake
 
 				register "controls.power_limits" = "{
 					.pl1 = {
-						.min_power = 6000,
-						.max_power = 20000,
+						.min_power = 5000,
+						.max_power = 6000,
 						.time_window_min = 28 * MSECS_PER_SEC,
 						.time_window_max = 28 * MSECS_PER_SEC,
 						.granularity = 500
@@ -296,7 +267,7 @@ chip soc/intel/alderlake
 				}"
 
 				## Fan options
-				register "options.fan.fine_grained_control" = "1"
+				register "options.fan.fine_grained_control" = "true"
 				register "options.fan.step_size" = "2"
 
 				device generic 0 on
@@ -341,7 +312,7 @@ chip soc/intel/alderlake
 				register "policies.passive" = "{
 					[0] = DPTF_PASSIVE(CPU,         CPU,           95, 5000),
 					[1] = DPTF_PASSIVE(CPU,         TEMP_SENSOR_0, 70, 5000),
-					[2] = DPTF_PASSIVE(CPU,         TEMP_SENSOR_1, 70, 5000),
+					[2] = DPTF_PASSIVE(CHARGER,     TEMP_SENSOR_1, 70, 5000),
 					[3] = DPTF_PASSIVE(CPU,         TEMP_SENSOR_2, 70, 5000),
 				}"
 
@@ -355,8 +326,8 @@ chip soc/intel/alderlake
 
 				register "controls.power_limits" = "{
 					.pl1 = {
-						.min_power = 15000,
-						.max_power = 20000,
+						.min_power = 14000,
+						.max_power = 15000,
 						.time_window_min = 28 * MSECS_PER_SEC,
 						.time_window_max = 28 * MSECS_PER_SEC,
 						.granularity = 500
@@ -393,7 +364,7 @@ chip soc/intel/alderlake
 				}"
 
 				## Fan options
-				register "options.fan.fine_grained_control" = "1"
+				register "options.fan.fine_grained_control" = "true"
 				register "options.fan.step_size" = "2"
 
 				device generic 1 on
@@ -487,30 +458,10 @@ chip soc/intel/alderlake
 				register "hid" = ""ELAN0000""
 				register "desc" = ""ELAN Touchpad""
 				register "irq" = "ACPI_IRQ_WAKE_LEVEL_LOW(GPP_B3_IRQ)"
-				register "wake" = "GPE0_DW1_03"
 				register "detect" = "1"
 				device i2c 15 on end
 			end
 		end #I2C1
-		device ref i2c5 on
-			chip drivers/i2c/hid
-				register "generic.hid" = ""ELAN9004""
-				register "generic.desc" = ""ELAN Touchscreen""
-				register "generic.irq" = "ACPI_IRQ_LEVEL_LOW(GPP_D16_IRQ)"
-				register "generic.detect" = "1"
-				register "generic.reset_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_LOW(GPP_D15)"
-				register "generic.reset_delay_ms" = "20"
-				register "generic.reset_off_delay_ms" = "2"
-				register "generic.enable_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPP_E17)"
-				register "generic.enable_delay_ms" = "1"
-				register "generic.stop_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_LOW(GPP_A21)"
-				register "generic.stop_delay_ms" = "150"
-				register "generic.stop_off_delay_ms" = "2"
-				register "generic.has_power_resource" = "1"
-				register "hid_desc_reg_offset" = "0x01"
-				device i2c 10 on end
-			end
-		end #I2C5
 		device ref heci1 on end
 		device ref emmc on
 			probe STORAGE STORAGE_UNKNOWN

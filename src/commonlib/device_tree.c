@@ -935,11 +935,10 @@ void dt_flatten(const struct device_tree *tree, void *start_dest)
 
 	uint8_t *struct_start = dest;
 	header->structure_offset = htobe32(dest - (uint8_t *)start_dest);
+	be32enc(&dest[struct_size], FDT_TOKEN_END);
+	struct_size += sizeof(uint32_t);
 	header->structure_size = htobe32(struct_size);
 	dest += struct_size;
-
-	*((uint32_t *)dest) = htobe32(FDT_TOKEN_END);
-	dest += sizeof(uint32_t);
 
 	uint8_t *strings_start = dest;
 	header->strings_offset = htobe32(dest - (uint8_t *)start_dest);
@@ -1040,31 +1039,19 @@ void dt_read_cell_props(const struct device_tree_node *node, u32 *addrcp,
 	}
 }
 
-/*
- * Find a node from a device tree path, relative to a parent node.
- *
- * @param parent	The node from which to start the relative path lookup.
- * @param path		An array of path component strings that will be looked
- *			up in order to find the node. Must be terminated with
- *			a NULL pointer. Example: {'firmware', 'coreboot', NULL}
- * @param addrcp	Pointer that will be updated with any #address-cells
- *			value found in the path. May be NULL to ignore.
- * @param sizecp	Pointer that will be updated with any #size-cells
- *			value found in the path. May be NULL to ignore.
- * @param create	1: Create node(s) if not found. 0: Return NULL instead.
- * @return		The found/created node, or NULL.
- */
-struct device_tree_node *dt_find_node(struct device_tree_node *parent,
-				      const char **path, u32 *addrcp,
-				      u32 *sizecp, int create)
+static struct device_tree_node *_dt_find_node(struct device_tree_node *parent,
+					      const char **path, u32 *addrcp,
+					      u32 *sizecp, int create)
 {
 	struct device_tree_node *node, *found = NULL;
 
-	/* Update #address-cells and #size-cells for this level. */
-	dt_read_cell_props(parent, addrcp, sizecp);
-
 	if (!*path)
 		return parent;
+
+	/* Update #address-cells and #size-cells for the parent level (cells
+	   properties always count for the direct children of their node). */
+	if (addrcp || sizecp)
+		dt_read_cell_props(parent, addrcp, sizecp);
 
 	/* Find the next node in the path, if it exists. */
 	list_for_each(node, parent->children, list_node) {
@@ -1087,7 +1074,35 @@ struct device_tree_node *dt_find_node(struct device_tree_node *parent,
 		list_insert_after(&found->list_node, &parent->children);
 	}
 
-	return dt_find_node(found, path + 1, addrcp, sizecp, create);
+	return _dt_find_node(found, path + 1, addrcp, sizecp, create);
+}
+
+/*
+ * Find a node from a device tree path, relative to a parent node.
+ *
+ * @param parent	The node from which to start the relative path lookup.
+ * @param path		An array of path component strings that will be looked
+ *			up in order to find the node. Must be terminated with
+ *			a NULL pointer. Example: {'firmware', 'coreboot', NULL}
+ * @param addrcp	Pointer that will be updated with any #address-cells
+ *			value found in the path. May be NULL to ignore.
+ * @param sizecp	Pointer that will be updated with any #size-cells
+ *			value found in the path. May be NULL to ignore.
+ * @param create	1: Create node(s) if not found. 0: Return NULL instead.
+ * @return		The found/created node, or NULL.
+ */
+struct device_tree_node *dt_find_node(struct device_tree_node *parent,
+				      const char **path, u32 *addrcp,
+				      u32 *sizecp, int create)
+{
+	/* Initialize cells to default values according to FDT spec. */
+	if (addrcp)
+		*addrcp = 2;
+
+	if (sizecp)
+		*sizecp = 1;
+
+	return _dt_find_node(parent, path, addrcp, sizecp, create);
 }
 
 /*
@@ -1121,7 +1136,8 @@ struct device_tree_node *dt_find_node_by_path(struct device_tree *tree,
 
 	if (path[0] == '/') { /* regular path */
 		if (path[1] == '\0') {	/* special case: "/" is root node */
-			dt_read_cell_props(tree->root, addrcp, sizecp);
+			if (addrcp || sizecp)
+				dt_read_cell_props(tree->root, addrcp, sizecp);
 			return tree->root;
 		}
 

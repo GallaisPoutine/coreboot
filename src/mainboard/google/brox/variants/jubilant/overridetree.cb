@@ -10,6 +10,7 @@ fw_config
 	field DB_USB 11 12
 		option DB_1A				0
 		option DB_1A_LTE			1
+		option DB_1A_LTE_SAR			2
 	end
 	field FPMCU 17 18
 		option FPMCU_ABSENT			0
@@ -19,6 +20,10 @@ end
 
 chip soc/intel/alderlake
 	register "platform_pmax" = "208"
+
+	# As per Intel Advisory doc#723158, the change is required to prevent possible
+	# display flickering issue.
+	register "disable_dynamic_tccold_handshake" = "true"
 
 	register "usb2_ports[0]" = "USB2_PORT_TYPE_C(OC_SKIP)"  # USB2_C0
 	register "usb2_ports[1]" = "USB2_PORT_EMPTY"		# Disable USB2 Port
@@ -73,6 +78,12 @@ chip soc/intel/alderlake
 			.fall_time_ns = 400,
 			.data_hold_time_ns = 50,
 		},
+	}"
+
+	register "power_limits_config[RPL_P_282_242_142_15W_CORE]" = "{
+		.tdp_pl1_override = 15,
+		.tdp_pl2_override = 41,
+		.tdp_pl4 = 87,
 	}"
 
 	device domain 0 on
@@ -214,13 +225,14 @@ chip soc/intel/alderlake
 						register "type" = "UPC_TYPE_INTERNAL"
 						device ref usb2_port4 on
 							probe DB_USB DB_1A_LTE
+							probe DB_USB DB_1A_LTE_SAR
 							probe unprovisioned
 						end
 					end
 					chip drivers/usb/acpi
 						register "desc" = ""USB2 Camera""
 						register "type" = "UPC_TYPE_INTERNAL"
-						register "has_power_resource" = "1"
+						register "has_power_resource" = "true"
 						register "enable_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPP_E7)"
 						device ref usb2_port6 on end
 					end
@@ -263,6 +275,7 @@ chip soc/intel/alderlake
 						register "type" = "UPC_TYPE_INTERNAL"
 						device ref usb3_port4 on
 							probe DB_USB DB_1A_LTE
+							probe DB_USB DB_1A_LTE_SAR
 							probe unprovisioned
 						end
 					end
@@ -285,10 +298,12 @@ chip soc/intel/alderlake
 				.clk_src = 1,
 				.clk_req = 1,
 				.flags = PCIE_RP_LTR | PCIE_RP_AER,
+				.pcie_rp_pcie_speed = SPEED_GEN2,
 			}"
 			chip drivers/wifi/generic
 				register "wake" = "GPE0_DW0_03"
 				register "add_acpi_dma_property" = "true"
+				use usb2_port10 as bluetooth_companion
 				device pci 00.0 on
 					probe WIFI_BT WIFI_BT_PCIE
 					probe unprovisioned
@@ -424,7 +439,7 @@ chip soc/intel/alderlake
 				register "input_precharge_resistor_ohms" = "4000"
 				register "input_analog_gain" = "1"
 				device i2c 28 on
-					probe DB_USB DB_1A_LTE
+					probe DB_USB DB_1A_LTE_SAR
 					probe unprovisioned
 				end
 			end
@@ -437,7 +452,7 @@ chip soc/intel/alderlake
 				register "compat_string" = ""google,cros-ec-spi""
 				register "irq" = "ACPI_IRQ_WAKE_LEVEL_LOW(GPP_D13_IRQ)"
 				register "wake" = "GPE0_DW1_13"
-				register "has_power_resource" = "1"
+				register "has_power_resource" = "true"
 				register "reset_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_LOW(GPP_D15)"
 				register "enable_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPP_D2)"
 				register "enable_delay_ms" = "3"

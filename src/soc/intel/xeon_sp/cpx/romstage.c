@@ -1,8 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
-#include <assert.h>
 #include <arch/romstage.h>
-#include <console/console.h>
 #include <cbmem.h>
 #include <fsp/api.h>
 #include <fsp/util.h>
@@ -13,6 +11,7 @@
 #include <soc/pci_devs.h>
 #include <soc/intel/common/smbios.h>
 #include <soc/soc_util.h>
+#include <static.h>
 #include <string.h>
 
 #include "chip.h"

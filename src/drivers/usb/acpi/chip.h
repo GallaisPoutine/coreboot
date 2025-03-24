@@ -49,6 +49,7 @@ struct drivers_usb_acpi_config {
 
 	/* Intel Bluetooth */
 	bool is_intel_bluetooth;
+	bool cnvi_bt_audio_offload;
 
 	/* GPIO used to take device out of reset or to put it into reset. */
 	struct acpi_gpio reset_gpio;
@@ -85,5 +86,13 @@ struct drivers_usb_acpi_config {
 
 /* Method to get PLD structure from USB device */
 bool usb_acpi_get_pld(const struct device *usb_device, struct acpi_pld *pld);
+
+/* Intel Bluetooth */
+void acpi_device_intel_bt(const struct acpi_gpio *enable_gpio,
+			  const struct acpi_gpio *reset_gpio,
+			  bool audio_offload);
+
+void acpi_device_intel_bt_common(const struct acpi_gpio *enable_gpio,
+				 const struct acpi_gpio *reset_gpio);
 
 #endif /* __USB_ACPI_CHIP_H__ */

@@ -27,6 +27,7 @@
 #define MBOX_BIOS_CMD_PSB_AUTO_FUSING		0x21
 #define MBOX_BIOS_CMD_PSP_CAPS_QUERY		0x27
 #define MBOX_BIOS_CMD_SET_SPL_FUSE		0x2d
+#define MBOX_BIOS_CMD_SET_RPMC_ADDRESS		0x39
 #define MBOX_BIOS_CMD_QUERY_SPL_FUSE		0x47
 #define MBOX_BIOS_CMD_I2C_TPM_ARBITRATION	0x64
 #define MBOX_BIOS_CMD_ABORT			0xfe
@@ -98,6 +99,12 @@ struct mbox_cmd_hsti_query_buffer {
 	uint32_t state;
 } __packed __aligned(32);
 
+/* MBOX_BIOS_CMD_SET_RPMC_ADDRESS */
+struct mbox_cmd_set_rpmc_address_buffer {
+	struct mbox_buffer_header header;
+	uint32_t address;
+} __packed __aligned(32);
+
 /* MBOX_BIOS_CMD_SET_SPL_FUSE */
 struct mbox_cmd_late_spl_buffer {
 	struct mbox_buffer_header header;
@@ -126,7 +133,7 @@ struct mbox_cmd_dtpm_config_buffer {
 #define PSP_CMD_TIMEOUT 1000 /* 1 second */
 
 #define C2P_BUFFER_MAXSIZE 0xc00 /* Core-to-PSP buffer */
-#define P2C_BUFFER_MAXSIZE 0xc00 /* PSP-to-core buffer */
+#define P2C_BUFFER_MAXSIZE 0x1000 /* PSP-to-core buffer */
 
 /* PSP to x86 status */
 enum mbox_p2c_status {

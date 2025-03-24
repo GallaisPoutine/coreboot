@@ -130,13 +130,13 @@ struct soc_intel_elkhartlake_config {
 	/* Enable S0iX support */
 	bool s0ix_enable;
 	/* Enable DPTF support */
-	int dptf_enable;
+	bool dptf_enable;
 
 	/* Deep SX enable for both AC and DC */
-	int deep_s3_enable_ac;
-	int deep_s3_enable_dc;
-	int deep_s5_enable_ac;
-	int deep_s5_enable_dc;
+	bool deep_s3_enable_ac;
+	bool deep_s3_enable_dc;
+	bool deep_s5_enable_ac;
+	bool deep_s5_enable_dc;
 
 	/* Deep Sx Configuration
 	 *  DSX_EN_WAKE_PIN       - Enable WAKE# pin
@@ -203,7 +203,7 @@ struct soc_intel_elkhartlake_config {
 	uint16_t SataPortsDitoVal[CONFIG_MAX_SATA_PORTS];
 
 	/* Audio related */
-	uint8_t PchHdaDspEnable;
+	bool PchHdaDspEnable;
 	uint8_t PchHdaAudioLinkHdaEnable;
 	uint8_t PchHdaSdiEnable[MAX_HD_AUDIO_SDI_LINKS];
 	uint8_t PchHdaAudioLinkDmicEnable[MAX_HD_AUDIO_DMIC_LINKS];

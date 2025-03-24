@@ -129,6 +129,16 @@ int spi_flash_cmd(const struct spi_slave *spi, u8 cmd, void *response, size_t le
 	return ret;
 }
 
+int spi_flash_cmd_multi(const struct spi_slave *spi, const u8 *dout, size_t bytes_out,
+			void *din, size_t bytes_in)
+{
+	int ret = do_spi_flash_cmd(spi, dout, bytes_out, din, bytes_in);
+	if (ret)
+		printk(BIOS_WARNING, "SF: Failed to send command %02x: %d\n", dout[0], ret);
+
+	return ret;
+}
+
 /* TODO: This code is quite possibly broken and overflowing stacks. Fix ASAP! */
 #pragma GCC diagnostic push
 #if defined(__GNUC__) && !defined(__clang__)
@@ -557,6 +567,11 @@ int spi_flash_probe(unsigned int bus, unsigned int cs, struct spi_flash *flash)
 	if (CONFIG(SPI_FLASH_EXIT_4_BYTE_ADDR_MODE) && SPI_FLASH_EXIT_4BYTE_STAGE) {
 		printk(BIOS_DEBUG, "SF: Exiting 4-byte addressing mode\n");
 		spi_flash_cmd(&flash->spi, CMD_EXIT_4BYTE_ADDR_MODE, NULL, 0);
+	}
+
+	/* TODO: only do this in stages that will need to call those functions? */
+	if (CONFIG(SPI_FLASH_RPMC)) {
+		spi_flash_fill_rpmc_caps(flash);
 	}
 
 	return 0;

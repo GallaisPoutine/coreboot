@@ -1,5 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
+#include <spi_flash.h>
 #include <types.h>
 #include "psp_def.h"
 
@@ -50,6 +51,30 @@ struct mbox_psp_cmd_spi_erase {
 	struct psp_spi_erase_request req;
 } __packed;
 
+struct psp_spi_rpmc_inc_mc {
+	uint32_t counter_address;
+	uint8_t counter_data[SPI_RPMC_COUNTER_DATA_LEN];
+	uint8_t signature[SPI_RPMC_SIG_LEN];
+} __packed;
+
+struct mbox_psp_cmd_spi_rpmc_inc_mc {
+	struct mbox_buffer_header header;
+	struct psp_spi_rpmc_inc_mc req;
+} __packed;
+
+struct psp_smi_rpmc_req_mc {
+	uint32_t counter_address;
+	uint8_t tag[SPI_RPMC_TAG_LEN];
+	uint8_t signature[SPI_RPMC_SIG_LEN];
+	uint8_t output_counter_data[SPI_RPMC_COUNTER_DATA_LEN];
+	uint8_t output_signature[SPI_RPMC_SIG_LEN];
+} __packed;
+
+struct mbox_psp_cmd_spi_rpmc_req_mc {
+	struct mbox_buffer_header header;
+	struct psp_smi_rpmc_req_mc req;
+} __packed;
+
 bool is_valid_psp_spi_info(struct mbox_psp_cmd_spi_info *cmd_buf);
 bool is_valid_psp_spi_read_write(struct mbox_psp_cmd_spi_read_write *cmd_buf);
 bool is_valid_psp_spi_erase(struct mbox_psp_cmd_spi_erase *cmd_buf);
@@ -66,3 +91,5 @@ enum mbox_p2c_status psp_smi_spi_get_info(struct mbox_default_buffer *buffer);
 enum mbox_p2c_status psp_smi_spi_read(struct mbox_default_buffer *buffer);
 enum mbox_p2c_status psp_smi_spi_write(struct mbox_default_buffer *buffer);
 enum mbox_p2c_status psp_smi_spi_erase(struct mbox_default_buffer *buffer);
+enum mbox_p2c_status psp_smi_spi_rpmc_inc_mc(struct mbox_default_buffer *buffer);
+enum mbox_p2c_status psp_smi_spi_rpmc_req_mc(struct mbox_default_buffer *buffer);

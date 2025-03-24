@@ -24,6 +24,7 @@
 #include <soc/msr.h>
 #include <soc/pci_devs.h>
 #include <soc/soc_chip.h>
+#include <static.h>
 #include <types.h>
 
 enum alderlake_model {
@@ -322,6 +323,10 @@ enum adl_cpu_type get_adl_cpu_type(void)
 
 uint8_t get_supported_lpm_mask(void)
 {
+	const config_t *conf = config_of_soc();
+	if (!conf->s0ix_enable)
+		return 0;
+
 	enum adl_cpu_type type = get_adl_cpu_type();
 	switch (type) {
 	case ADL_M: /* fallthrough */

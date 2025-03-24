@@ -1,8 +1,8 @@
-# StarBook Mk V
+# Byte Mk II
 
 ## Specs
 
-- CPU (full processor specs available at https://ark.intel.com)
+- CPU (full processor specs available at <https://ark.intel.com>)
     - Intel N200 (Alder Lake)
 - EC
     - ITE IT5570E
@@ -34,7 +34,7 @@
 
 ## Building coreboot
 
-Please follow the [Star Labs build instructions](common/building.md) to build coreboot, using `config.starlabs_starbook_adl` as config file.
+Please follow the [Star Labs build instructions](common/building.md) to build coreboot, using `config.starlabs_byte_adl` as config file.
 
 ### Preliminaries
 

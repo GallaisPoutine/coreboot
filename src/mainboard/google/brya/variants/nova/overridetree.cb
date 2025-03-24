@@ -172,7 +172,7 @@ chip soc/intel/alderlake
 				}"
 
 				## Fan options
-				register "options.fan.fine_grained_control" = "1"
+				register "options.fan.fine_grained_control" = "true"
 				register "options.fan.step_size" = "2"
 
 				device generic 0 alias dptf_policy on end
@@ -185,6 +185,13 @@ chip soc/intel/alderlake
 				.clk_src = 0,
 				.flags = PCIE_RP_LTR | PCIE_RP_AER,
 			}"
+			chip soc/intel/common/block/pcie/rtd3
+				register "is_storage" = "true"
+				register "enable_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPP_F14)"
+				register "reset_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_LOW(GPP_B4)"
+				register "srcclk_pin" = "0"
+				device generic 0 on end
+			end
 		end
 		device ref cnvi_wifi on
 			chip drivers/wifi/generic
@@ -257,6 +264,10 @@ chip soc/intel/alderlake
 			end
 		end
 		device ref pmc hidden end
+		device ref tbt_pcie_rp0 off end
+		device ref tbt_pcie_rp1 off end
+		device ref tbt_pcie_rp2 off end
+		device ref tbt_pcie_rp3 off end
 		device ref tcss_xhci on end
 		device ref tcss_dma0 off end
 		device ref tcss_dma1 off end

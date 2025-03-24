@@ -24,6 +24,7 @@
 #include <soc/ramstage.h>
 #include <soc/soc_chip.h>
 #include <soc/tcss.h>
+#include <static.h>
 
 #if CONFIG(HAVE_ACPI_TABLES)
 const char *soc_acpi_name(const struct device *dev)
@@ -115,6 +116,9 @@ const char *soc_acpi_name(const struct device *dev)
 	case PCI_DEVFN_HDA:	return "HDAS";
 	case PCI_DEVFN_SMBUS:	return "SBUS";
 	case PCI_DEVFN_GBE:	return "GLAN";
+	case PCI_DEVFN_SRAM:	return "SRAM";
+	case PCI_DEVFN_SPI:	return "FSPI";
+	case PCI_DEVFN_CSE:	return "HECI";
 	}
 	printk(BIOS_DEBUG, "Missing ACPI Name for PCI: 00:%02x.%01x\n",
 			PCI_SLOT(dev->path.pci.devfn), PCI_FUNC(dev->path.pci.devfn));
@@ -264,7 +268,7 @@ static void soc_enable(struct device *dev)
 
 static void soc_init_final_device(void *chip_info)
 {
-	uint32_t reset_status = fsp_get_pch_reset_status();
+	efi_return_status_t reset_status = fsp_get_pch_reset_status();
 
 	if (reset_status == FSP_SUCCESS)
 		return;
@@ -273,8 +277,8 @@ static void soc_init_final_device(void *chip_info)
 	fsp_handle_reset(reset_status);
 
 	/* Control shouldn't return here */
-	die_with_post_code(POSTCODE_HW_INIT_FAILURE,
-		 "Failed to handle the FSP reset request with error 0x%08x\n", reset_status);
+	fsp_die_with_post_code(reset_status, POSTCODE_HW_INIT_FAILURE,
+			 "Failed to handle the FSP reset request with error");
 }
 
 struct chip_operations soc_intel_meteorlake_ops = {

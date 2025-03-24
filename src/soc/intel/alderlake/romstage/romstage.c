@@ -32,6 +32,23 @@
 #define PCR_PSFX_T0_SHDW_PCIEN 0x1C
 #define PCR_PSFX_T0_SHDW_PCIEN_FUNDIS  (1 << 8)
 
+bool __weak mainboard_expects_another_reset(void)
+{
+	bool reset_pending = true;
+
+	if (!CONFIG(SOC_INTEL_CSE_LITE_SKU))
+		reset_pending = false;
+
+	/*
+	 * Skip reset if CSE slot switch is pending meaning, CSE is booting from RO.
+	 * CSE state switch will issue a reset anyway.
+	 */
+	if (is_cse_boot_to_rw() == true)
+		reset_pending = false;
+
+	return reset_pending;
+}
+
 static void disable_ufs(void)
 {
 	/* disable USF0 */
@@ -177,18 +194,26 @@ void mainboard_romstage_entry(void)
 	if (!CONFIG(INTEL_TXT))
 		disable_intel_txt();
 
-	if (CONFIG(SOC_INTEL_CSE_LITE_SYNC_IN_ROMSTAGE) && !s3wake)
-		cse_fw_sync();
-
 	/* Program to Disable UFS Controllers */
 	if (!is_devfn_enabled(PCH_DEVFN_UFS) &&
 			 (CONFIG(USE_UNIFIED_AP_FIRMWARE_FOR_UFS_AND_NON_UFS))) {
-		printk(BIOS_INFO, "Disabling UFS controllers\n");
-		disable_ufs();
-		if (ps->prev_sleep_state == ACPI_S5) {
+		if ((ps->prev_sleep_state == ACPI_S5 || cse_check_host_cold_reset()) &&
+		    !mainboard_expects_another_reset()) {
+			printk(BIOS_INFO, "Disabling UFS controllers\n");
+			disable_ufs();
 			printk(BIOS_INFO, "Warm Reset after disabling UFS controllers\n");
 			system_reset();
 		}
+	}
+
+	if (CONFIG(SOC_INTEL_CSE_LITE_SYNC_IN_ROMSTAGE) && !s3wake) {
+		cse_fill_bp_info();
+		if (CONFIG(CHROMEOS_ENABLE_ESOL) &&
+		    is_cse_fw_update_required() && !is_cse_boot_to_rw()) {
+			elog_add_event_byte(ELOG_TYPE_FW_EARLY_SOL, ELOG_FW_EARLY_SOL_CSE_SYNC);
+			ux_inform_user_of_update_operation("CSE update");
+		}
+		cse_fw_sync();
 	}
 
 	/* Program MCHBAR, DMIBAR, GDXBAR and EDRAMBAR */

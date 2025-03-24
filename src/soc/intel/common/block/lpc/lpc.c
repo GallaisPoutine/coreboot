@@ -16,6 +16,15 @@ __weak void lpc_soc_init(struct device *dev)
 	/* no-op */
 }
 
+/* Create SoC specific SSDT */
+__weak void lpc_soc_fill_ssdt(const struct device *dev)
+{
+	/*
+	 * no-op
+	 * by default it does nothing so that static DSDT could be used
+	 */
+}
+
 /* Fill up LPC IO resource structure inside SoC directory */
 __weak void pch_lpc_soc_fill_io_resources(struct device *dev)
 {
@@ -134,6 +143,7 @@ struct device_operations lpc_ops = {
 #if CONFIG(HAVE_ACPI_TABLES)
 	.write_acpi_tables	= southbridge_write_acpi_tables,
 	.acpi_name		= lpc_acpi_name,
+	.acpi_fill_ssdt	        = lpc_soc_fill_ssdt,
 #endif
 	.init			= lpc_soc_init,
 	.scan_bus		= scan_static_bus,
@@ -448,6 +458,7 @@ static const unsigned short pci_device_ids[] = {
 	PCI_DID_INTEL_ADP_M_N_ESPI_31,
 	PCI_DID_INTEL_SPR_ESPI_1,
 	PCI_DID_INTEL_SNR_LPC,
+	PCI_DID_INTEL_IBL_ESPI_0,
 	0
 };
 
